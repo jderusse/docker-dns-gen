@@ -1,0 +1,19 @@
+{{ range $host, $containers := groupByMulti $ "Env.DOMAIN_NAME" "," }}
+    {{ range $index, $container := $containers }}
+        {{ $addrLen := len $container.Addresses }}
+        {{ if gt $addrLen 0 }}
+            {{ with $address := index $container.Addresses 0 }}
+address=/{{ $host }}/{{ $address.IP }}
+            {{ end }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{ range $index, $container := $ }}
+    {{ $addrLen := len $container.Addresses }}
+    {{ if gt $addrLen 0 }}
+        {{ with $address := index $container.Addresses 0 }}
+address=/{{ $container.Name }}.docker/{{ $address.IP }}
+        {{ end }}
+    {{ end }}
+{{ end }}
