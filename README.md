@@ -10,7 +10,7 @@ First you have to know the IP of your `Docker0` interface. It may be
 `172.17.42.1` but it could be something else. To known your IP, run the
 following command:
 
-    $ sudo ifconfig docker0 | awk '{ print $2}' | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}"
+    $ /sbin/ifconfig docker0 | grep "inet addr" | awk '{ print $2}' | cut -d: -f2
 
 Now, you can start the `dns-gen` container:
 
