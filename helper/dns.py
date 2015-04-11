@@ -21,16 +21,16 @@ def get_ip_address(ifname):
         struct.pack('256s', ifname[:15])
     )[20:24])
 
-# Warmup docker interface
-subprocess.Popen(['docker', 'run', '--rm', 'busybox'], stdout=subprocess.PIPE).communicate()
+# A simple request used to touch the socket and start the service
+subprocess.Popen(['docker', 'version'], stdout=subprocess.PIPE).communicate()
 
-# Retreive Docker0 IP
+# Retreive docker0 IP
 docker_ip = get_ip_address('docker0')
 if not docker_ip:
     print('\033[31mNo IP found for interface docker\033[0m')
     sys.exit(1)
 
-print('Docker0 IP %s' % docker_ip)
+print('docker0 IP %s' % docker_ip)
 
 # Restore previous resolv
 with open('/etc/resolvconf/resolv.conf.d/head', 'r') as f:
@@ -50,7 +50,7 @@ if not len(dns_servers):
 subprocess.Popen(['docker', 'rm', '-f', 'dns-gen'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
 # Start dns container
-subprocess.Popen(['docker', 'run', '-td', '--name', 'dns-gen', '-p', '%s:53:53/udp' % docker_ip, '-v', '/var/run/docker.sock:/var/run/docker.sock', 'jderusse/dns-gen'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+subprocess.Popen(['docker', 'run', '-d', '--name', 'dns-gen', '--restart', 'always', '-p', '%s:53:53/udp' % docker_ip, '-v', '/var/run/docker.sock:/var/run/docker.sock', 'jderusse/dns-gen'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
 # Add container in resolvconf
 resolvconf.append('nameserver %s # docker-dns-gen' % docker_ip)
