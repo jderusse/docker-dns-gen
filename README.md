@@ -78,8 +78,24 @@ dns-gen.
 
 ### Bonus
 
-You'll find in this repository a `dns.py` wich simplfy the bootstrap by
-starting the dns-gen containers and register the IP in resolv.conf
+You can automaticly update the resolv.conf of the container when your host
+changes his DNS (ie: network switching) by using the container [dns-sync].
+
+    $ docker run -d --name dns-sync \
+        --restart always \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v /etc:/data/dns/etc \
+        -v /run:/data/dns/run \
+        jderusse/dns-sync
+
+When coupled with dns-sync, you can force all containers to use this DNS by
+updating the docker's default options
+
+    $ vim /etc/default/docker
+    DOCKER_OPTS="--bip=172.17.42.1/24 --dns=172.17.42.1"
+
+    $ sudo service docker restart
 
   [docker-gen]: https://github.com/jwilder/docker-gen
   [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
+  [dns-sync]: https://github.com/jderusse/docker-dns-sync
