@@ -46,8 +46,8 @@ booting, by passing the option `--restart always` to your `run` command.
 **beware**! When your host will restart, it may change the addresse IP of
 the `docker0` interface.
 This small change will prevent docker to start your dns-gen container.
-Indeed, rememeber our container is configurered to forward the port 53 to the
-previous `docker0` interface which may not existe after reboot.
+Indeed, remember our container is configurered to forward the port 53 to the
+previous `docker0` interface which may not exist after reboot.
 Your container just wont start, you'll have to re-create it.
 To solve this drawback, force docker to always use the same IP range by
 editing the default configuration of docker daemon (sometime located in
@@ -62,7 +62,7 @@ Sometime the interface is not updated, you'll have to restart your host.
 
 **One more thing** When you start your host, the docker service is not fully
 loaded.
-Until this daemon is loaded, the dns container will not be automaticly started
+Until this daemon is loaded, the dns container will not be automaticaly started
 and you'll notice "slowness" when your host will try to resolve DNS.
 The service is not fully loaded, because it use a feature of systemd called
 [socket activation]: The first access to the docker's socket will trigger the
