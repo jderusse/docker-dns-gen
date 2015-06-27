@@ -14,7 +14,11 @@ following command:
 
 Now, you can start the `dns-gen` container:
 
-    $ docker run -d --name dns-gen -p 172.17.42.1:53:53/udp -v /var/run/docker.sock:/var/run/docker.sock jderusse/dns-gen
+    $ docker run --detach \
+      --name dns-gen \
+      --publish 172.17.42.1:53:53/udp \
+      --volume /var/run/docker.sock:/var/run/docker.sock \
+      jderusse/dns-gen
 
 Last thing: Register you new DnsServer in you resolv.conf
 
@@ -23,17 +27,17 @@ Last thing: Register you new DnsServer in you resolv.conf
 
 This is it. You can now start your containers and retrieve their IP:
 
-    $ docker run --name my_app -d nginx
+    $ docker run --name my_app --detach nginx
     $ dig my_app.docker
     $ dig sub.my_app.docker
 
 You can customize the DNS name by providing an environment variable, like this:
 `DOMAIN_NAME=subdomain.youdomain.com`
 
-    $ docker run -e DOMAIN_NAME=foo.com -d nginx
+    $ docker run --env DOMAIN_NAME=foo.com --detach nginx
     $ dig foo.com
     $ dig sub.foo.com
-    $ docker run -e DOMAIN_NAME=bar.com,baz.com -d nginx
+    $ docker run --env DOMAIN_NAME=bar.com,baz.com --detach nginx
     $ dig bar.com
     $ dig baz.com
 
@@ -42,7 +46,11 @@ You can customize the DNS name by providing an environment variable, like this:
 You can tell docker (version >= 1.2) to automatically start the DNS container
 after booting, by passing the option `--restart always` to your `run` command.
 
-    $ docker run -d --name dns-gen --restart always -p 172.17.42.1:53:53/udp -v /var/run/docker.sock:/var/run/docker.sock jderusse/dns-gen
+    $ docker run --daemon --name dns-gen \
+      --restart always \
+      --publish 172.17.42.1:53:53/udp \
+      --volume /var/run/docker.sock:/var/run/docker.sock \
+      jderusse/dns-gen
 
 **beware**! When your host will restart, it may change the IP address of
 the `docker0` interface.
@@ -81,11 +89,11 @@ dns-gen.
 You can automatically update the resolv.conf of the container when your host
 changes its DNS (ie: network switching) by using the container [dns-sync].
 
-    $ docker run -d --name dns-sync \
+    $ docker run --detach --name dns-sync \
         --restart always \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /etc:/data/dns/etc \
-        -v /run:/data/dns/run \
+        --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume /etc:/data/dns/etc \
+        --volume /run:/data/dns/run \
         jderusse/dns-sync
 
 When coupled with dns-sync, you can force all containers to use this DNS by
