@@ -12,12 +12,13 @@ RUN apt-get update \
 ENV DOCKER_GEN_VERSION 0.4.0
 
 RUN apt-get update \
- && apt-get install -y -q --no-install-recommends \
+ && apt-get install --no-install-recommends -y \
     wget \
 
  && wget --no-check-certificate -qO- https://github.com/jwilder/docker-gen/releases/download/$DOCKER_GEN_VERSION/docker-gen-linux-amd64-$DOCKER_GEN_VERSION.tar.gz | tar xvz -C /usr/local/bin \
 
  && apt-get purge -y wget \
+ && apt-get autoremove -y \
 
  && apt-get clean \
  && rm -r /var/lib/apt/lists/*
