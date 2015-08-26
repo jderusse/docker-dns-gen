@@ -9,7 +9,7 @@ RUN apt-get update \
  && apt-get clean \
  && rm -r /var/lib/apt/lists/*
 
-ENV DOCKER_GEN_VERSION 0.3.9
+ENV DOCKER_GEN_VERSION 0.4.0
 
 RUN apt-get update \
  && apt-get install -y -q --no-install-recommends \
