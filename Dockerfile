@@ -29,6 +29,7 @@ ENV DOCKER_HOST unix:///var/run/docker.sock
 ADD config/dnsmasq.tmpl /etc/dnsmasq.tmpl
 ADD config/supervisord.conf /etc/supervisor/conf.d/docker-gen.conf
 
+VOLUME /var/run
 EXPOSE 53/udp
 
 CMD ["/usr/bin/supervisord", "-n"]
