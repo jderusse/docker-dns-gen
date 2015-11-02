@@ -64,9 +64,17 @@ your distribution). You have to restart the docker service to take the changes
 into account. Sometimes the interface is not updated, you will have to restart
 your host.
 
+    # For systemd users (Fedora and recent Ubuntu versions) :
+    $ vim /lib/systemd/system/docker.service
+    # append the --bip="172.17.42.1/24" option to the ExecStart line
+    # then
+    $ sudo systemctl daemon-reload
+
+    # For other users
     $ vim /etc/default/docker
     DOCKER_OPTS="--bip=172.17.42.1/24"
 
+    # In any cases
     $ sudo service docker restart
 
 **One more thing** When you start your host, the docker service is not fully
@@ -99,9 +107,17 @@ changes its DNS (ie: network switching) by using the container [dns-sync].
 When coupled with dns-sync, you can force all containers to use this DNS by
 updating the docker's default options
 
+    # For systemd users (Fedora and recent Ubuntu versions) :
+    $ vim /lib/systemd/system/docker.service
+    # append the --bip="172.17.42.1/24" --dns="172.17.42.1" options to the ExecStart line
+    # then
+    $ sudo systemctl daemon-reload
+
+    # For other users
     $ vim /etc/default/docker
     DOCKER_OPTS="--bip=172.17.42.1/24 --dns=172.17.42.1"
 
+    # In any cases
     $ sudo service docker restart
 
   [docker-gen]: https://github.com/jwilder/docker-gen
