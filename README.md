@@ -4,13 +4,13 @@ dns-gen sets up a container running Dnsmasq and [docker-gen].
 docker-gen generates a configuration for Dnsmasq and reloads it when containers are
 started and stopped.
 
-### Usage
+### Simple usage
 
 First, you have to know the IP of your `docker0` interface. It may be
 `172.17.42.1` but it could be something else. To known your IP, run the
 following command:
 
-    $ /sbin/ifconfig docker0 | grep "inet addr" | awk '{ print $2}' | cut -d: -f2
+    $ /sbin/ifconfig docker0 | grep "inet" | head -n1 | awk '{ print $2}' | cut -d: -f2
 
 Now, you can start the `dns-gen` container:
 
@@ -34,12 +34,12 @@ This is it. You can now start your containers and retrieve their IP:
 You can customize the DNS name by providing an environment variable, like this:
 `DOMAIN_NAME=subdomain.youdomain.com`
 
-    $ docker run --env DOMAIN_NAME=foo.com --detach nginx
-    $ dig foo.com
-    $ dig sub.foo.com
-    $ docker run --env DOMAIN_NAME=bar.com,baz.com --detach nginx
-    $ dig bar.com
-    $ dig baz.com
+    $ docker run --env DOMAIN_NAME=foo.docker --detach nginx
+    $ dig foo.docker
+    $ dig sub.foo.docker
+    $ docker run --env DOMAIN_NAME=bar.docker,baz.docker --detach nginx
+    $ dig bar.docker
+    $ dig baz.docker
 
 ## Start the container automatically after reboot
 
@@ -65,6 +65,7 @@ into account. Sometimes the interface is not updated, you will have to restart
 your host.
 
     $ vim /etc/default/docker
+
     DOCKER_OPTS="--bip=172.17.42.1/24"
 
     $ sudo service docker restart
@@ -84,25 +85,57 @@ Et voila, now, docker will really start with your host, it will always
 use the same range of IP addresses and will always start/restart the container
 dns-gen.
 
-### Bonus
+### Advanced usage
 
-You can automatically update the resolv.conf of the container when your host
-changes its DNS (ie: network switching) by using the container [dns-sync].
+The previous method is simple to use, but suffer from drawback:
 
-    $ docker run --detach --name dns-sync \
-        --restart always \
-        --volume /var/run/docker.sock:/var/run/docker.sock \
-        --volume /etc:/data/dns/etc \
-        --volume /run:/data/dns/run \
-        jderusse/dns-sync
+ * Containers won't resolve DNS from other containers
+ * External DNS resolution may be slower
+ * Some VPN changes the /etc/resolv.conf file which remove your configuration
 
-When coupled with dns-sync, you can force all containers to use this DNS by
-updating the docker's default options
+Instead of using the `docker0` interface and modifying `/etc/resolv.conf`,
+an other solution is to install localy a dnsmasq server (some distribs like
+ubuntu or debian are now using it by default) and forward requests to the
+dns-gen container and configure containers to use it.
+
+*step 1* Configure the local dnsmasq to forward request to `127.0.0.1:54`
+And listen to interfaces `lo` and `docker0`.
+
+    $ sudo vim /etc/NetworkManager/dnsmasq.d/01_docker`
+    bind-interfaces
+    interface=lo
+    interface=docker0
+
+    server=/docker/127.0.0.1#54
+
+    $ sudo sudo systemctl status NetworkManager
+
+*step 2* Run dns-gen and bind port `53` to the `54`'s host
+
+    $ docker run --daemon --name dns-gen \
+      --restart always \
+      --publish 54:53/udp \
+      --volume /var/run/docker.sock:/var/run/docker.sock \
+      jderusse/dns-gen -R
+
+> the option `-R` just tell dns-gen to not fallback to the default resolver
+> which avoid an infinity loop of resolution
+
+
+*step 3* Configure docker to use the `docker0` as DNS server
 
     $ vim /etc/default/docker
-    DOCKER_OPTS="--bip=172.17.42.1/24 --dns=172.17.42.1"
+    DOCKER_OPTS="--dns=172.17.42.1 --bip=172.17.42.1/24"
 
     $ sudo service docker restart
+
+Thank to this configuration the resolution workflow is now:
+
+ * the host want to resolve `google.com`: `host` -> `dnsmasq` -> `external dns`
+ * the host want to resolve `foo.docker`: `host` -> `dnsmasq` -> `127.0.0.1:54` -> `dns-gen`
+ * a container want to resolve `google.com`: `container` -> `172.17.42.1` -> `dnsmasq` -> `external dns`
+ * a container want to resolve `foo.docker`: `container` -> `172.17.42.1` -> `dnsmasq` -> `127.0.0.1:54` -> `dns-gen`
+
 
   [docker-gen]: https://github.com/jwilder/docker-gen
   [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
