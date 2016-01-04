@@ -64,10 +64,18 @@ your distribution). You have to restart the docker service to take the changes
 into account. Sometimes the interface is not updated, you will have to restart
 your host.
 
+    # For systemd users (Fedora and recent Ubuntu versions) :
+    $ vim /lib/systemd/system/docker.service
+    # append the --bip="172.17.42.1/24" option to the ExecStart line
+    # then
+    $ sudo systemctl daemon-reload
+
+    # For other users
     $ vim /etc/default/docker
 
     DOCKER_OPTS="--bip=172.17.42.1/24"
 
+    # In any cases
     $ sudo service docker restart
 
 **One more thing** When you start your host, the docker service is not fully
@@ -124,9 +132,17 @@ And listen to interfaces `lo` and `docker0`.
 
 *step 3* Configure docker to use the `docker0` as DNS server
 
+    # For systemd users (Fedora and recent Ubuntu versions) :
+    $ vim /lib/systemd/system/docker.service
+    # append the --bip="172.17.42.1/24" --dns="172.17.42.1" options to the ExecStart line
+    # then
+    $ sudo systemctl daemon-reload
+
+    # For other users
     $ vim /etc/default/docker
     DOCKER_OPTS="--dns=172.17.42.1 --bip=172.17.42.1/24"
 
+    # In any cases
     $ sudo service docker restart
 
 Thank to this configuration the resolution workflow is now:
