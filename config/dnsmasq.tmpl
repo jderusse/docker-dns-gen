@@ -1,11 +1,19 @@
 {{ define "host" }}
-    {{ $addrLen := len .Container.Addresses }}
-    {{ $address := .Container }}
-    {{ if gt $addrLen 0 }}
-        {{ $address := index .Container.Addresses 0 }}
-    {{ end }}
-    {{ if $address }}
-address=/{{.Host }}/{{ $address.IP }}
+    {{ $host := .Host }}
+    {{ $tld := .Tld }}
+    {{ if eq $tld "" }}
+        {{ range $index, $network := .Container.Networks }}
+            {{ if ne $network.IP "" }}
+address=/{{ $host }}/{{ $network.IP }}
+            {{ end }}
+        {{ end }}
+    {{ else }}
+        {{ range $index, $network := .Container.Networks }}
+            {{ if ne $network.IP "" }}
+address=/{{ $host }}.{{ $tld }}/{{ $network.IP }}
+address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
+            {{ end }}
+        {{ end }}
     {{ end }}
 {{ end }}
 
@@ -15,15 +23,15 @@ address=/{{.Host }}/{{ $address.IP }}
     {{ $host_part := split $container.Name "_" }}
     {{ $host_part_len := len $host_part }}
     {{ if eq $host_part_len 3 }}
-        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 0) "." $tld)) }}
-        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 1) "." (index $host_part 0) "." $tld)) }}
-        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 2) "." (index $host_part 1) "." (index $host_part 0) "." $tld)) }}
+        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 0)) "Tld" $tld) }}
+        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 1) "." (index $host_part 0)) "Tld" $tld) }}
+        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 2) "." (index $host_part 1) "." (index $host_part 0)) "Tld" $tld) }}
     {{ end }}
-    {{ template "host" (dict "Container" $container "Host" (print $container.Name "." $tld)) }}
+    {{ template "host" (dict "Container" $container "Host" $container.Name "Tld" $tld) }}
 {{ end }}
 
 {{ range $host, $containers := groupByMulti $ "Env.DOMAIN_NAME" "," }}
     {{ range $index, $container := $containers }}
-        {{ template "host" (dict "Container" $container "Host" (print $host)) }}
+        {{ template "host" (dict "Container" $container "Host" (print $host) "Tld" "") }}
     {{ end }}
 {{ end }}
