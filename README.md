@@ -46,7 +46,7 @@ You can customize the DNS name by providing an environment variable, like this:
 You can tell docker (version >= 1.2) to automatically start the DNS container
 after booting, by passing the option `--restart always` to your `run` command.
 
-    $ docker run --daemon --name dns-gen \
+    $ docker run -d --name dns-gen \
       --restart always \
       --publish 172.17.42.1:53:53/udp \
       --volume /var/run/docker.sock:/var/run/docker.sock \
@@ -116,7 +116,7 @@ And listen to interfaces `lo` and `docker0`.
 
     server=/docker/127.0.0.1#54
 
-    $ sudo sudo systemctl status NetworkManager
+    $ sudo systemctl status NetworkManager
 
 *step 2* Run dns-gen and bind port `53` to the `54`'s host
 
