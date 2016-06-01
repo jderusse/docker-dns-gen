@@ -4,6 +4,9 @@ dns-gen sets up a container running Dnsmasq and [docker-gen].
 docker-gen generates a configuration for Dnsmasq and reloads it when containers are
 started and stopped.
 
+By default it will provide thoses hosts: `containername.docker` and `servicename.projectfolder.docker`
+pointing to the corresponding container.
+
 ### Simple usage
 
 First, you have to know the IP of your `docker0` interface. It may be
@@ -133,8 +136,14 @@ And listen to interfaces `lo` and `docker0`.
 *step 3* Configure docker to use the `docker0` as DNS server
 
     # For systemd users (Fedora and recent Ubuntu versions) :
-    $ vim /lib/systemd/system/docker.service
-    # append the --bip="172.17.42.1/24" --dns="172.17.42.1" options to the ExecStart line
+    
+    $ vim /etc/systemd/system/docker.service
+    
+    # append
+    [Service]
+    ExecStart=
+    ExecStart=/usr/bin/docker daemon -H fd:// --bip=172.17.42.1/24 --dns=172.17.42.1
+    
     # then
     $ sudo systemctl daemon-reload
 
