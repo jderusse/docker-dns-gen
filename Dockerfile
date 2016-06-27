@@ -1,7 +1,7 @@
 FROM alpine:latest
 MAINTAINER Jérémy Derussé "jeremy@derusse.com"
 
-RUN apk -U add \
+RUN apk --no-cache add \
     dnsmasq \
     openssl
 
