@@ -25,6 +25,10 @@ address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
     {{ if eq $host_part_len 3 }}
         {{ template "host" (dict "Container" $container "Host" (print (index $host_part 0)) "Tld" $tld) }}
         {{ template "host" (dict "Container" $container "Host" (print (index $host_part 1) "." (index $host_part 0)) "Tld" $tld) }}
+    {{ end }}
+    {{ if eq $host_part_len 4 }}
+        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 0)) "Tld" $tld) }}
+        {{ template "host" (dict "Container" $container "Host" (print (index $host_part 1) "." (index $host_part 0)) "Tld" $tld) }}
         {{ template "host" (dict "Container" $container "Host" (print (index $host_part 2) "." (index $host_part 1) "." (index $host_part 0)) "Tld" $tld) }}
     {{ end }}
     {{ template "host" (dict "Container" $container "Host" $container.Name "Tld" $tld) }}
