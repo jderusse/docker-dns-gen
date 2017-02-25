@@ -165,3 +165,24 @@ Thank to this configuration the resolution workflow is now:
   [docker-gen]: https://github.com/jwilder/docker-gen
   [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
   [dns-sync]: https://github.com/jderusse/docker-dns-sync
+
+#### Troubleshooting
+
+On restart, if you loose the dns resolution, check the `NetworkManager` service status.
+
+    $ service NetworkManager status
+
+If the service is down, check your `syslog`, grep on `dnsmasq`:
+    
+    $ grep dnsmasq /var/log/syslog
+
+If this error is logged:
+
+    dnsmasq[12345]: unknow docker0 interface
+
+In this case, the `NetworkManager` service try to start before the `docker` service.  
+`dnsmasq` can't listen to an interface who is not already defined.
+
+You can fix it by increasing the `docker` start priority (higher than `NetworkManager`).
+
+    $ update-rc.d docker defaults 90
