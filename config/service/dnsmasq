@@ -1,0 +1,3 @@
+# /etc/governator/services/dnsmasq
+command = /usr/sbin/dnsmasq -d -u root
+priority = 200

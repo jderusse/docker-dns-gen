@@ -10,10 +10,12 @@ ENV DOCKER_HOST unix:///var/run/docker.sock
 
 RUN wget -qO- https://github.com/jwilder/docker-gen/releases/download/$DOCKER_GEN_VERSION/docker-gen-alpine-linux-amd64-$DOCKER_GEN_VERSION.tar.gz | tar xvz -C /usr/local/bin
 ADD config/dnsmasq.tmpl /etc/dnsmasq.tmpl
+ADD config/service/dnsmasq /etc/governator/services/dnsmasq
+ADD config/service/dnsmasq-reload /etc/governator/services/dnsmasq-reload
 ADD dnsmasq-reload /usr/local/bin/dnsmasq-reload
-ADD entrypoint /usr/local/bin/entrypoint
+ADD bin/governator /usr/local/bin/governator
 
 VOLUME /var/run
 EXPOSE 53/udp
 
-ENTRYPOINT ["entrypoint"]
+CMD ["governator", "-D"]

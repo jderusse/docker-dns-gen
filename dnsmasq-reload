@@ -1,4 +1,2 @@
 #!/usr/bin/env sh
-
-killall dnsmasq
-/usr/sbin/dnsmasq "$@"
+exec docker-gen -watch -only-exposed -notify "governator restart dnsmasq" /etc/dnsmasq.tmpl /etc/dnsmasq.conf
