@@ -162,9 +162,9 @@ Thank to this configuration the resolution workflow is now:
  * a container want to resolve `foo.docker`: `container` -> `172.17.42.1` -> `dnsmasq` -> `127.0.0.1:54` -> `dns-gen`
 
 
-  [docker-gen]: https://github.com/jwilder/docker-gen
-  [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
-  [dns-sync]: https://github.com/jderusse/docker-dns-sync
+#### Automate configuration
+
+@jpic writes an [ansible playbook] to configure the host.
 
 #### Troubleshooting
 
@@ -186,3 +186,8 @@ In this case, the `NetworkManager` service try to start before the `docker` serv
 You can fix it by increasing the `docker` start priority (higher than `NetworkManager`).
 
     $ update-rc.d docker defaults 90
+
+
+  [docker-gen]: https://github.com/jwilder/docker-gen
+  [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
+  [ansible playbook]: https://gist.github.com/jpic/7bfbe20cf759986b7c7c7851c2d63762
