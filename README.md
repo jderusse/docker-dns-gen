@@ -164,7 +164,8 @@ Thank to this configuration the resolution workflow is now:
 
 #### Automate configuration
 
-@jpic writes an [ansible playbook] to configure the host.
+@jpic writes an [ansible playbook] to configure the host. 
+Thanks to him.
 
 #### Troubleshooting
 
