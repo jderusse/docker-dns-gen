@@ -1,0 +1,3 @@
+# /etc/governator/services/dnsmasq
+command = dnsmasq-reload
+priority = 100

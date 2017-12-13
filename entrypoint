@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-
-docker-gen -watch -only-exposed -notify "dnsmasq-reload -u root $@" /etc/dnsmasq.tmpl /etc/dnsmasq.conf
