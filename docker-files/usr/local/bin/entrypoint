@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+echo "Ignoring server ${GATEWAY}"
+
+docker-gen -watch -only-exposed -notify "dnsmasq-reload -u root $*" /etc/dnsmasq.tmpl /etc/dnsmasq.conf &
+
+while true; do
+    sed "/${GATEWAY}/d" "/host$(chroot /host realpath -L /etc/resolv.conf)" > /etc/resolv.dnsmasq
+    sleep 1
+done

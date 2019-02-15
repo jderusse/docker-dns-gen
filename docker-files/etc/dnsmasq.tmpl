@@ -39,3 +39,6 @@ address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
         {{ template "host" (dict "Container" $container "Host" (print $host) "Tld" "") }}
     {{ end }}
 {{ end }}
+
+local=/docker/
+resolv-file=/etc/resolv.dnsmasq

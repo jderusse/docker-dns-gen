@@ -4,82 +4,130 @@ dns-gen sets up a container running Dnsmasq and [docker-gen].
 docker-gen generates a configuration for Dnsmasq and reloads it when containers are
 started and stopped.
 
-By default it will provide thoses hosts: `containername.docker` and `servicename.projectfolder.docker`
-pointing to the corresponding container.
+By default it will provide thoses domain:
+- `container_name.docker`
+- `container_name.network_name.docker`
+- `docker-composer_service.docker-composer_project.docker`
+- `docker-composer_service.docker-composer_project.network_name.docker`
 
-### Simple usage
+**easy install:**
+
+    sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jderusse/docker-dns-gen/master/bin/install)"
+
+## How it works
+
+The container `dns-gen` expose a standard dnsmasq service. It returns ip of
+known container and fallback to host's resolv.conf for other domains.
+
+## Requirement
+
+In order to ease the configuration of your host. We recommand to install
+`resolvconf`
+
+    apt install resolvconf
+
+The container have to listen on port `53` on `docker0` interface. You should
+assert that nothing else is listening to that port.
+
+    sudo netstat -ntlp --udp|grep ":53 "
+
+If some service are listening to the same port, you should changes your
+setting to exclude the `docker0` interface.
+For instance, in dnsmasq use :
+
+    except-interface=docker0
+
+## Q/A
+
+**Why mounting the entier host in the container (`-v /:/host`)**
+
+The dnsmasq embeded inside the container is configured to fallback to the
+default `resolv.conf`. But, given the host is configured to use the container
+to resolve DNS, and to avoid infinite loop, the container uses the hosts's
+`/etc/resolv.conf` without it own IP.
+
+Mounting the `-v /etc/resolv.conf:/etc/resolv.conf` file is not possible as
+this file is often overriden by the host (changing network, connecting to
+wifi, connecting to a VPN) and docker wouldn't update the mounted file. And,
+in most of the cases, this file is a symlink to another location, and the the
+target should be accessible by the container too.
+
+For instances, when using resolvconf on Debian 9:
+
+    /etc/resolv.conf -> /etc/resolvconf/run/resolv.conf
+    /etc/resolvconf/run -> /run/resolvconf
+
+**Why not using the container's `/etc/resolv.conf` file?**
+
+First of all, because the user could have configured the `/etc/docker/daemon.json`
+to use a specific `name server` inside the container, whereas we are trying to
+configure the host's DNS resolution.
+
+Moreover, from my tests, the file is not updated when the host changes it `name
+servers`.
+
+**Why using the host network**
+
+Some distributions (like ubuntu) use a local dnsmasq instance to resolv DNS
+This instance, runing on the host local network, should be accessible by the
+container. Using the `host` network is the easiest way to be as close as
+possible to the host.
+
+## Previous version of docker-gen
+
+If you already install and configured a previous version of dns-gen you should
+uninstall it.
+
+- uninstall dnsmasq
+- remove previous container `docker rm -fv dns-gen`
+- remove custom configuration in `/etc/docker/daemon.json`
+- remove /etc/NetworkManager/dnsmasq.d/01_docker
+- restart the service NetworkManager (and in some case the machine)
+
+## Manual Install
+
+Just run the `all in one` script `./bin/install`
+
+If you want to deep inside, here are the manuall steps to permform the same
 
 First, you have to know the IP of your `docker0` interface. It may be
 `172.17.42.1` but it could be something else. To known your IP, run the
 following command:
 
-    $ /sbin/ifconfig docker0 | grep "inet" | head -n1 | awk '{ print $2}' | cut -d: -f2
+    GATEWAY=$(ip -4 addr show docker0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    echo ${GATEWAY}
 
 Now, you can start the `dns-gen` container:
 
-    $ docker run --detach \
-      --name dns-gen \
-      --publish 172.17.42.1:53:53/udp \
-      --volume /var/run/docker.sock:/var/run/docker.sock \
-      jderusse/dns-gen
-
-Last thing: Register you new DnsServer in you resolv.conf
-
-    $ echo "nameserver 172.17.42.1" | sudo tee --append /etc/resolvconf/resolv.conf.d/head
-    $ sudo resolvconf -u
-
-This is it. You can now start your containers and retrieve their IP:
-
-    $ docker run --name my_app --detach nginx
-    $ dig my_app.docker
-    $ dig sub.my_app.docker
-
-You can customize the DNS name by providing an environment variable, like this:
-`DOMAIN_NAME=subdomain.youdomain.com`
-
-    $ docker run --env DOMAIN_NAME=foo.docker --detach nginx
-    $ dig foo.docker
-    $ dig sub.foo.docker
-    $ docker run --env DOMAIN_NAME=bar.docker,baz.docker --detach nginx
-    $ dig bar.docker
-    $ dig baz.docker
-
-## Start the container automatically after reboot
-
-You can tell docker (version >= 1.2) to automatically start the DNS container
-after booting, by passing the option `--restart always` to your `run` command.
-
-    $ docker run -d --name dns-gen \
+    docker run -d --name dns-gen \
       --restart always \
-      --publish 172.17.42.1:53:53/udp \
+      --net host \
+      -e GATEWAY=$GATEWAY \
+      --log-opt "max-size=10m" \
+      --volume /:/host \
       --volume /var/run/docker.sock:/var/run/docker.sock \
-      jderusse/dns-gen
+      jderusse/dns-gen:2
+
+You can test the container
+
+    docker run --name test nginx:alpine
+    dig test.docker @${GATEWAY}
+
+Once OK, you can finally update your local resolver
+
+    echo "nameserver ${GATEWAY}" | sudo tee --append /etc/resolvconf/resolv.conf.d/head
+    resolvconf -u
 
 **beware**! When your host will restart, it may change the IP address of
-the `docker0` interface.
-This small change will prevent docker to start your dns-gen container.  Indeed,
-remember our container is configured to forward port 53 to the previous
-`docker0` interface which may not exist after reboot.  Your container just will
-not start, you will have to re-create it. To solve this drawback, force docker
-to always use the same IP range by editing the default configuration of the docker
-daemon (sometimes located in `/etc/default/docker` but may change regarding
-your distribution). You have to restart the docker service to take the changes
-into account. Sometimes the interface is not updated, you will have to restart
-your host.
+the `docker0` interface. Mays may have to run the command `bin/install` to fix
+your configuration.
 
-    # For systemd users (Fedora and recent Ubuntu versions) :
-    $ vim /lib/systemd/system/docker.service
-    # append the --bip="172.17.42.1/24" option to the ExecStart line
-    # then
-    $ sudo systemctl daemon-reload
+Or you can force docker to always use the same IP by editing the
+`/etc/docker/daemon.json` file and adding:
 
-    # For other users
-    $ vim /etc/default/docker
-
-    DOCKER_OPTS="--bip=172.17.42.1/24"
-
-    # In any cases
-    $ sudo service docker restart
+    {
+      "bip": "172.17.42.1/24"
+    }
 
 **One more thing** When you start your host, the docker service is not fully
 loaded.
@@ -90,104 +138,27 @@ The service is not fully loaded, because it uses a feature of systemd called
 start of the true service.
 To skip this feature, you simply have to activate the docker service.
 
-    $ sudo update-rc.d docker enable
+    sudo update-rc.d docker enable
 
-Et voila, now, docker will really start with your host, it will always
-use the same range of IP addresses and will always start/restart the container
-dns-gen.
+## Troubleshooting
 
-### Advanced usage
+To see the list of register DNS, dump the content of the generated
+`dnsmasq.conf`
 
-The previous method is simple to use, but suffer from drawback:
-
- * Containers won't resolve DNS from other containers
- * External DNS resolution may be slower
- * Some VPN changes the /etc/resolv.conf file which remove your configuration
-
-Instead of using the `docker0` interface and modifying `/etc/resolv.conf`,
-an other solution is to install localy a dnsmasq server (some distribs like
-ubuntu or debian are now using it by default) and forward requests to the
-dns-gen container and configure containers to use it.
-
-*step 1* Configure the local dnsmasq to forward request to `127.0.0.1:54`
-And listen to interfaces `lo` and `docker0`.
-
-    $ sudo vim /etc/NetworkManager/dnsmasq.d/01_docker`
-    bind-interfaces
-    interface=lo
-    interface=docker0
-
-    server=/docker/127.0.0.1#54
-
-    $ sudo systemctl status NetworkManager
-
-*step 2* Run dns-gen and bind port `53` to the `54`'s host
-
-    $ docker run --daemon --name dns-gen \
-      --restart always \
-      --publish 54:53/udp \
-      --volume /var/run/docker.sock:/var/run/docker.sock \
-      jderusse/dns-gen -R
-
-> the option `-R` just tell dns-gen to not fallback to the default resolver
-> which avoid an infinity loop of resolution
-
-
-*step 3* Configure docker to use the `docker0` as DNS server
-
-    # For systemd users (Fedora and recent Ubuntu versions) :
-    
-    $ vim /etc/systemd/system/docker.service
-    
-    # append
-    [Service]
-    ExecStart=
-    ExecStart=/usr/bin/docker daemon -H fd:// --bip=172.17.42.1/24 --dns=172.17.42.1
-    
-    # then
-    $ sudo systemctl daemon-reload
-
-    # For other users
-    $ vim /etc/default/docker
-    DOCKER_OPTS="--dns=172.17.42.1 --bip=172.17.42.1/24"
-
-    # In any cases
-    $ sudo service docker restart
-
-Thank to this configuration the resolution workflow is now:
-
- * the host want to resolve `google.com`: `host` -> `dnsmasq` -> `external dns`
- * the host want to resolve `foo.docker`: `host` -> `dnsmasq` -> `127.0.0.1:54` -> `dns-gen`
- * a container want to resolve `google.com`: `container` -> `172.17.42.1` -> `dnsmasq` -> `external dns`
- * a container want to resolve `foo.docker`: `container` -> `172.17.42.1` -> `dnsmasq` -> `127.0.0.1:54` -> `dns-gen`
-
-
-#### Automate configuration
-
-@jpic writes an [ansible playbook] to configure the host. 
-Thanks to him.
-
-#### Troubleshooting
+    docker exec dns-gen cat /etc/dnsmasq.conf
 
 On restart, if you loose the dns resolution, check the `NetworkManager` service status.
 
-    $ service NetworkManager status
+    service NetworkManager status
 
-If the service is down, check your `syslog`, grep on `dnsmasq`:
-    
-    $ grep dnsmasq /var/log/syslog
+Check the syntax of the `/etc/resolc.conf` file which should contain at the
+begging the IP of the `docker0` interface:
 
-If this error is logged:
+    nameserver 172.17.42.1
 
-    dnsmasq[12345]: unknow docker0 interface
+Check the containers logs
 
-In this case, the `NetworkManager` service try to start before the `docker` service.  
-`dnsmasq` can't listen to an interface who is not already defined.
-
-You can fix it by increasing the `docker` start priority (higher than `NetworkManager`).
-
-    $ update-rc.d docker defaults 90
-
+    docker logs --tail 100 -f dns-gen
 
   [docker-gen]: https://github.com/jwilder/docker-gen
   [socket activation]: http://0pointer.de/blog/projects/socket-activation.html
