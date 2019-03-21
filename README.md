@@ -151,7 +151,7 @@ On restart, if you loose the dns resolution, check the `NetworkManager` service 
 
     service NetworkManager status
 
-Check the syntax of the `/etc/resolc.conf` file which should contain at the
+Check the syntax of the `/etc/resolv.conf` file which should contain at the
 begging the IP of the `docker0` interface:
 
     nameserver 172.17.42.1
