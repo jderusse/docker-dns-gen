@@ -4,7 +4,6 @@ set -e
 # This script is meant for quick & easy install via:
 #   $ sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jderusse/docker-dns-gen/master/bin/install)"
 
-
 C1='\033[0;31m'
 C2='\033[0;33m'
 C3='\033[0;32m'
@@ -35,7 +34,7 @@ requirements () {
 }
 
 requirements_packages () {
-  install_if_needed "resolvconf" "resolvconf"
+  install_if_needed "resolvconf" "resolvconf" "yes"
   echo "${C5} - resolvconf is installed${C0}"
 }
 
@@ -116,8 +115,18 @@ install_config () {
 install_if_needed () {
   command=${1}
   package=${2}
+  reboot=${3:-""}
   if ! [ -x "$(command -v $1)" ]; then
     install_apt "${package}"
+    if ! [ -z "${reboot}" ]; then
+      echo ""
+      echo " ${C1}+--------------------------------------------+"
+      echo " ${C1}|                                            |${C0}"
+      echo " ${C1}| You probably need to to reboot your system |${C0}"
+      echo " ${C1}|                                            |${C0}"
+      echo " ${C1}+--------------------------------------------+"
+      echo ""
+    fi
   fi
 }
 
