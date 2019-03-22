@@ -40,5 +40,9 @@ address=/{{ $host }}.{{ $network.Name }}.{{ $tld }}/{{ $network.IP }}
     {{ end }}
 {{ end }}
 
+bind-interfaces
+interface=docker0
+except-interface=lo
+
 local=/docker/
 resolv-file=/etc/resolv.dnsmasq
