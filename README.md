@@ -119,7 +119,7 @@ Once OK, you can finally update your local resolver
     resolvconf -u
 
 **beware**! When your host will restart, it may change the IP address of
-the `docker0` interface. Mays may have to run the command `bin/install` to fix
+the `docker0` interface. You may have to run the command `bin/install` to fix
 your configuration.
 
 Or you can force docker to always use the same IP by editing the
