@@ -1,4 +1,9 @@
 #!/usr/bin/env sh
 
 killall dnsmasq
+
+# Give enough time to terminate the process.
+#
+sleep 1
+
 /usr/sbin/dnsmasq "$@"
